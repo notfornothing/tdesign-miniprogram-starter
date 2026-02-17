@@ -2,10 +2,9 @@
  * Rust服务器查询页面
  * 篝火风格设计
  */
-const app = getApp()
+import request from '~/api/request';
 
-// API基础地址
-const API_BASE = 'http://localhost:8080/api'
+const API_BASE = '/api';  // 相对路径，baseUrl在config.js中配置
 
 Page({
   data: {
@@ -68,10 +67,7 @@ Page({
         params.keyword = this.data.searchValue
       }
 
-      const res = await this.request({
-        url: `${API_BASE}/servers`,
-        data: params
-      })
+      const res = await request(`${API_BASE}/servers`, 'GET', params)
 
       if (res.code === 200 && res.data) {
         this.setData({
@@ -175,29 +171,6 @@ Page({
         ping: '89'
       }
     ]
-  },
-
-  /**
-   * 封装请求方法
-   */
-  request(options) {
-    return new Promise((resolve, reject) => {
-      wx.request({
-        url: options.url,
-        method: options.method || 'GET',
-        data: options.data || {},
-        header: {
-          'Content-Type': 'application/json',
-          ...options.header
-        },
-        success: (res) => {
-          resolve(res.data)
-        },
-        fail: (error) => {
-          reject(error)
-        }
-      })
-    })
   },
 
   /**
@@ -328,24 +301,16 @@ Page({
 
     try {
       // 先查询服务器
-      const queryRes = await this.request({
-        url: `${API_BASE}/servers/query`,
-        method: 'POST',
-        data: {
-          ip: newServerIp,
-          port: newServerPort || '28015'
-        }
+      const queryRes = await request(`${API_BASE}/servers/query`, 'POST', {
+        ip: newServerIp,
+        port: newServerPort || '28015'
       })
 
       if (queryRes.code === 200) {
         // 查询成功，添加到数据库
-        const addRes = await this.request({
-          url: `${API_BASE}/servers`,
-          method: 'POST',
-          data: {
-            ip: newServerIp,
-            port: newServerPort || '28015'
-          }
+        const addRes = await request(`${API_BASE}/servers`, 'POST', {
+          ip: newServerIp,
+          port: newServerPort || '28015'
         })
 
         wx.hideLoading()
