@@ -5,6 +5,11 @@
   },
   "subpackages": [
     {
+      "root": "pages/rust",
+      "name": "rust",
+      "pages": ["index"]
+    },
+    {
       "root": "pages/search",
       "name": "search",
       "pages": ["index"]

@@ -1,4 +1,17 @@
 <nav nav-type="search" />
+
+<!-- Rust服务器查询入口 -->
+<view class="rust-entry" bindtap="goRustServer">
+  <view class="rust-entry-bg">
+    <view class="fire-icon">🔥</view>
+  </view>
+  <view class="rust-entry-content">
+    <view class="rust-entry-title">RUST服务器查询</view>
+    <view class="rust-entry-desc">实时查询服务器状态与玩家信息</view>
+  </view>
+  <view class="rust-entry-arrow">→</view>
+</view>
+
 <view class="home-container">
   <view class="home-content">
     <t-tabs defaultValue="recommend">

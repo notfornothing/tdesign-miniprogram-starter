@@ -79,4 +79,9 @@ Page({
       url: '/pages/release/index',
     });
   },
+  goRustServer() {
+    wx.navigateTo({
+      url: '/pages/rust/index',
+    });
+  },
 });

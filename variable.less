@@ -8,7 +8,7 @@
 @font-size-small: 14px;
 @font-size-mini: 12px;
 
-// color
+// color - 原有配色
 @bg-color: #f3f3f3;
 @bg-color-white: #ffffff;
 
@@ -21,3 +21,49 @@
 @headline-medium: 28px;
 @body-large: 16px;
 @body-small: 12px;
+
+// ===============================
+// Rust篝火风格配色
+// ===============================
+
+// 背景色
+@rust-bg-dark: #1a1a1a;          // 主背景深黑
+@rust-bg-medium: #2d2d2d;        // 次背景深灰
+@rust-bg-light: #3d3d3d;         // 浅灰背景
+@rust-bg-card: #252525;          // 卡片背景
+
+// 火焰色系
+@rust-fire-red: #cd412b;         // Rust官方红
+@rust-fire-orange: #ff6b35;      // 火焰橙
+@rust-fire-yellow: #ffc107;      // 火焰黄
+@rust-fire-light: #ff8c42;       // 浅橙色
+
+// 木质/自然色系
+@rust-wood-brown: #8b5a2b;       // 木棕色
+@rust-wood-dark: #5c4033;        // 深木色
+@rust-charcoal: #4a4a4a;         // 木炭灰
+
+// 文字色
+@rust-text-white: #f5f5f5;       // 主文字白
+@rust-text-gray: #a0a0a0;        // 次要文字灰
+@rust-text-muted: #666666;       // 弱化文字
+
+// 功能色
+@rust-accent: #e85a1f;           // 强调色
+@rust-success: #4caf50;          // 在线/成功
+@rust-warning: #ff9800;          // 警告
+@rust-error: #f44336;            // 错误/离线
+
+// 渐变
+@rust-gradient-fire: linear-gradient(180deg, @rust-fire-orange 0%, @rust-fire-red 100%);
+@rust-gradient-dark: linear-gradient(180deg, @rust-bg-medium 0%, @rust-bg-dark 100%);
+@rust-gradient-glow: radial-gradient(ellipse at center, rgba(205, 65, 43, 0.4) 0%, rgba(205, 65, 43, 0) 70%);
+
+// 阴影
+@rust-shadow-fire: 0 0 20rpx rgba(205, 65, 43, 0.5);
+@rust-shadow-card: 0 4rpx 16rpx rgba(0, 0, 0, 0.3);
+@rust-shadow-fab: 0 8rpx 32rpx rgba(205, 65, 43, 0.6);
+
+// 边框
+@rust-border-color: @rust-charcoal;
+@rust-border-light: #333333;
