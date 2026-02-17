@@ -17,7 +17,8 @@ Page({
     serverList: [],
     showAddModal: false,
     newServerIp: '',
-    newServerPort: '28015'
+    newServerPort: '28015',
+    errorMsg: ''
   },
 
   onLoad() {
@@ -46,7 +47,7 @@ Page({
    * 加载服务器列表
    */
   async loadServerList() {
-    this.setData({ loading: true })
+    this.setData({ loading: true, errorMsg: '' })
 
     try {
       const params = {
@@ -67,110 +68,27 @@ Page({
         params.keyword = this.data.searchValue
       }
 
+      console.log('请求服务器列表:', `${API_BASE}/servers`, params)
       const res = await request(`${API_BASE}/servers`, 'GET', params)
+      console.log('服务器列表响应:', res)
 
       if (res.code === 200 && res.data) {
         this.setData({
           serverList: res.data.list || []
         })
+      } else {
+        this.setData({
+          errorMsg: res.message || '获取数据失败'
+        })
       }
     } catch (error) {
       console.error('加载服务器列表失败:', error)
-      // 使用mock数据
       this.setData({
-        serverList: this.getMockData()
+        errorMsg: '请求失败: ' + (error.errMsg || error.message || '未知错误')
       })
     } finally {
       this.setData({ loading: false })
     }
-  },
-
-  /**
-   * 获取Mock数据
-   */
-  getMockData() {
-    return [
-      {
-        id: '1001',
-        name: 'Rusticated.com - Main',
-        ip: '47.115.230.101',
-        port: '28015',
-        region: 'asia',
-        mapName: 'Procedural Map',
-        mapSize: '4000',
-        players: '187',
-        maxPlayers: '300',
-        isOfficial: '0',
-        isModded: '0',
-        gatherRate: '1',
-        status: 'online',
-        ping: '35'
-      },
-      {
-        id: '1002',
-        name: 'Facepunch Singapore',
-        ip: '103.62.49.103',
-        port: '28015',
-        region: 'asia',
-        mapName: 'Procedural Map',
-        mapSize: '4500',
-        players: '245',
-        maxPlayers: '400',
-        isOfficial: '1',
-        isModded: '0',
-        gatherRate: '1',
-        status: 'online',
-        ping: '28'
-      },
-      {
-        id: '1003',
-        name: 'Rustoria.co - 3x Solo/Duo/Trio',
-        ip: '45.88.228.91',
-        port: '28015',
-        region: 'eu',
-        mapName: 'Procedural Map',
-        mapSize: '3500',
-        players: '156',
-        maxPlayers: '250',
-        isOfficial: '0',
-        isModded: '1',
-        gatherRate: '3',
-        status: 'online',
-        ping: '120'
-      },
-      {
-        id: '1004',
-        name: 'GGEZ.RIP - 5x MAX 4',
-        ip: '185.217.59.43',
-        port: '28015',
-        region: 'eu',
-        mapName: 'Procedural Map',
-        mapSize: '3000',
-        players: '98',
-        maxPlayers: '200',
-        isOfficial: '0',
-        isModded: '1',
-        gatherRate: '5',
-        status: 'online',
-        ping: '145'
-      },
-      {
-        id: '1005',
-        name: 'Facepunch US West',
-        ip: '208.103.5.182',
-        port: '28015',
-        region: 'us',
-        mapName: 'Procedural Map',
-        mapSize: '4250',
-        players: '312',
-        maxPlayers: '350',
-        isOfficial: '1',
-        isModded: '0',
-        gatherRate: '1',
-        status: 'online',
-        ping: '89'
-      }
-    ]
   },
 
   /**
@@ -230,12 +148,22 @@ Page({
     const server = this.data.serverList.find(s => s.id === serverId)
 
     if (server) {
-      // 跳转到服务器详情页（待实现）
       wx.showModal({
         title: server.name,
-        content: `IP: ${server.ip}:${server.port}\n玩家: ${server.players}/${server.maxPlayers}\n地图: ${server.mapName}`,
-        showCancel: false,
-        confirmText: '知道了'
+        content: `IP: ${server.ip}:${server.port}\n玩家: ${server.players}/${server.maxPlayers}\n地图: ${server.mapName || '未知'}`,
+        showCancel: true,
+        cancelText: '复制地址',
+        confirmText: '知道了',
+        success: (res) => {
+          if (res.cancel) {
+            wx.setClipboardData({
+              data: `client.connect ${server.ip}:${server.port}`,
+              success: () => {
+                wx.showToast({ title: '已复制', icon: 'success' })
+              }
+            })
+          }
+        }
       })
     }
   },
@@ -297,42 +225,63 @@ Page({
       return
     }
 
-    wx.showLoading({ title: '查询中...' })
+    wx.showLoading({ title: '查询中...', mask: true })
 
     try {
-      // 先查询服务器
+      // 先查询服务器(A2S协议)
+      console.log('A2S查询:', newServerIp, newServerPort)
       const queryRes = await request(`${API_BASE}/servers/query`, 'POST', {
         ip: newServerIp,
         port: newServerPort || '28015'
       })
+      console.log('A2S查询结果:', queryRes)
 
-      if (queryRes.code === 200) {
-        // 查询成功，添加到数据库
-        const addRes = await request(`${API_BASE}/servers`, 'POST', {
-          ip: newServerIp,
-          port: newServerPort || '28015'
-        })
-
+      if (queryRes.code === 200 && queryRes.data) {
+        // 查询成功，显示服务器信息
+        const info = queryRes.data
         wx.hideLoading()
 
-        if (addRes.code === 200) {
-          wx.showToast({
-            title: '添加成功',
-            icon: 'success'
-          })
-          this.closeModal()
-          this.loadServerList()
-        } else {
-          wx.showToast({
-            title: addRes.message || '添加失败',
-            icon: 'none'
-          })
-        }
+        wx.showModal({
+          title: '查询成功',
+          content: `服务器: ${info.name}\n地图: ${info.map}\n玩家: ${info.players}/${info.maxPlayers}\n\n是否添加到列表?`,
+          confirmText: '添加',
+          success: async (res) => {
+            if (res.confirm) {
+              // 添加到数据库
+              wx.showLoading({ title: '添加中...', mask: true })
+              try {
+                const addRes = await request(`${API_BASE}/servers`, 'POST', {
+                  ip: newServerIp,
+                  port: newServerPort || '28015'
+                })
+                wx.hideLoading()
+
+                if (addRes.code === 200) {
+                  wx.showToast({ title: '添加成功', icon: 'success' })
+                  this.closeModal()
+                  this.loadServerList()
+                } else {
+                  wx.showToast({
+                    title: addRes.message || '添加失败',
+                    icon: 'none'
+                  })
+                }
+              } catch (err) {
+                wx.hideLoading()
+                wx.showToast({
+                  title: '添加失败',
+                  icon: 'none'
+                })
+              }
+            }
+          }
+        })
       } else {
         wx.hideLoading()
         wx.showToast({
           title: queryRes.message || '无法连接服务器',
-          icon: 'none'
+          icon: 'none',
+          duration: 2000
         })
       }
     } catch (error) {
@@ -340,7 +289,8 @@ Page({
       console.error('查询服务器失败:', error)
       wx.showToast({
         title: '查询失败，请检查网络',
-        icon: 'none'
+        icon: 'none',
+        duration: 2000
       })
     }
   },
@@ -359,20 +309,9 @@ Page({
   },
 
   /**
-   * 复制服务器地址
+   * 重试
    */
-  copyAddress(e) {
-    const server = e.currentTarget.dataset.server
-    if (server) {
-      wx.setClipboardData({
-        data: `client.connect ${server.ip}:${server.port}`,
-        success: () => {
-          wx.showToast({
-            title: '已复制连接命令',
-            icon: 'success'
-          })
-        }
-      })
-    }
+  onRetry() {
+    this.loadServerList()
   }
 })

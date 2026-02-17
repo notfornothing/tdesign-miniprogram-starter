@@ -1,61 +1,206 @@
-<nav nav-type="search" />
-
-<!-- Rust服务器查询入口 -->
-<view class="rust-entry" bindtap="goRustServer">
-  <view class="rust-entry-bg">
-    <view class="fire-icon">🔥</view>
+<!-- Rust篝火风格服务器查询首页 -->
+<view class="rust-page">
+  <!-- 自定义导航栏 -->
+  <view class="custom-navbar" style="padding-top: {{statusBarHeight}}px;">
+    <view class="navbar-content">
+      <view class="navbar-title">Rust服务器</view>
+    </view>
   </view>
-  <view class="rust-entry-content">
-    <view class="rust-entry-title">RUST服务器查询</view>
-    <view class="rust-entry-desc">实时查询服务器状态与玩家信息</view>
-  </view>
-  <view class="rust-entry-arrow">→</view>
-</view>
 
-<view class="home-container">
-  <view class="home-content">
-    <t-tabs defaultValue="recommend">
-      <t-tab-panel label="推荐" value="recommend">
-        <t-pull-down-refresh
-          value="{{enable}}"
-          bind:refresh="onRefresh"
-          loadingTexts="{{['下拉刷新', '松手刷新', '正在刷新', '刷新完成']}}"
-        >
-          <view class="home-card-list">
-            <t-swiper
-              list="{{swiperList}}"
-              navigation="{{ { type: 'dots-bar' } }}"
-              height="488rpx"
-              style="width: 340rpx"
-            />
-            <card
-              wx:for="{{cardInfo}}"
-              wx:key="index"
-              desc="{{item.desc}}"
-              url="{{item.url}}"
-              tags="{{item.tags}}"
-            />
+  <!-- 顶部火焰装饰 -->
+  <view class="fire-header">
+    <view class="fire-glow"></view>
+    <view class="header-content">
+      <view class="rust-logo">
+        <text class="logo-text">RUST</text>
+        <text class="logo-subtitle">SERVER FINDER</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 搜索区域 -->
+  <view class="search-section">
+    <view class="search-box">
+      <t-search
+        value="{{searchValue}}"
+        placeholder="搜索服务器名称或IP..."
+        shape="round"
+        leftIcon="search"
+        bind:submit="onSearch"
+        bind:change="onSearchChange"
+        t-class="rust-search"
+      />
+    </view>
+  </view>
+
+  <!-- 筛选标签 -->
+  <view class="filter-section">
+    <scroll-view scroll-x class="filter-scroll">
+      <view class="filter-tags">
+        <view
+          class="filter-tag {{currentRegion === '' ? 'active' : ''}}"
+          bindtap="onRegionFilter"
+          data-region=""
+        >全部</view>
+        <view
+          class="filter-tag {{currentRegion === 'cn' ? 'active' : ''}}"
+          bindtap="onRegionFilter"
+          data-region="cn"
+        >中国</view>
+        <view
+          class="filter-tag {{currentRegion === 'us' ? 'active' : ''}}"
+          bindtap="onRegionFilter"
+          data-region="us"
+        >北美</view>
+        <view
+          class="filter-tag {{currentRegion === 'eu' ? 'active' : ''}}"
+          bindtap="onRegionFilter"
+          data-region="eu"
+        >欧洲</view>
+        <view
+          class="filter-tag {{currentRegion === 'asia' ? 'active' : ''}}"
+          bindtap="onRegionFilter"
+          data-region="asia"
+        >亚洲</view>
+        <view
+          class="filter-tag {{isOfficial === '1' ? 'active' : ''}}"
+          bindtap="onOfficialFilter"
+        >官方服</view>
+        <view
+          class="filter-tag {{isModded === '1' ? 'active' : ''}}"
+          bindtap="onModdedFilter"
+        >模组服</view>
+      </view>
+    </scroll-view>
+  </view>
+
+  <!-- 服务器列表 -->
+  <view class="server-list-section">
+    <!-- 加载中 -->
+    <view wx:if="{{loading}}" class="loading-container">
+      <view class="fire-loading">
+        <view class="fire-particle"></view>
+        <view class="fire-particle"></view>
+        <view class="fire-particle"></view>
+      </view>
+      <text class="loading-text">正在搜索服务器...</text>
+    </view>
+
+    <!-- 错误状态 -->
+    <view wx:elif="{{errorMsg}}" class="empty-container">
+      <view class="empty-fire">
+        <t-icon name="close-circle" size="80rpx" color="#cd412b" />
+      </view>
+      <text class="empty-text">{{errorMsg}}</text>
+      <view class="add-server-btn" bindtap="onRetry">
+        <text>重试</text>
+      </view>
+    </view>
+
+    <!-- 无数据 -->
+    <view wx:elif="{{serverList.length === 0}}" class="empty-container">
+      <view class="empty-fire">
+        <t-icon name="fire" size="80rpx" color="#cd412b" />
+      </view>
+      <text class="empty-text">暂无服务器数据</text>
+      <view class="add-server-btn" bindtap="onAddServer">
+        <text>+ 添加服务器</text>
+      </view>
+    </view>
+
+    <!-- 服务器列表 -->
+    <view wx:else class="server-list">
+      <view
+        class="server-card"
+        wx:for="{{serverList}}"
+        wx:key="id"
+        bindtap="onServerTap"
+        data-id="{{item.id}}"
+      >
+        <!-- 服务器状态指示灯 -->
+        <view class="status-indicator {{item.status === 'online' ? 'online' : 'offline'}}"></view>
+
+        <!-- 服务器信息 -->
+        <view class="server-info">
+          <view class="server-name">{{item.name}}</view>
+          <view class="server-meta">
+            <view class="meta-item">
+              <t-icon name="location" size="24rpx" color="#8b5a2b" />
+              <text>{{item.region || '未知'}}</text>
+            </view>
+            <view class="meta-item">
+              <t-icon name="map" size="24rpx" color="#8b5a2b" />
+              <text>{{item.mapName || 'Procedural Map'}}</text>
+            </view>
           </view>
-        </t-pull-down-refresh>
-      </t-tab-panel>
-      <t-tab-panel label="我的关注" value="follow">
-        <view class="home-card-list">
-          <card
-            wx:for="{{focusCardInfo}}"
-            wx:key="index"
-            desc="{{item.desc}}"
-            url="{{item.url}}"
-            tags="{{item.tags}}"
+          <view class="server-address">{{item.ip}}:{{item.port}}</view>
+        </view>
+
+        <!-- 玩家数量 -->
+        <view class="player-count">
+          <view class="count-value">
+            <text class="current">{{item.players || '0'}}</text>
+            <text class="separator">/</text>
+            <text class="max">{{item.maxPlayers || '0'}}</text>
+          </view>
+          <view class="count-label">在线玩家</view>
+        </view>
+
+        <!-- 倍率和标签 -->
+        <view class="server-tags">
+          <view class="tag rate" wx:if="{{item.gatherRate && item.gatherRate !== '1'}}">
+            {{item.gatherRate}}x
+          </view>
+          <view class="tag official" wx:if="{{item.isOfficial === '1'}}">官方</view>
+          <view class="tag modded" wx:if="{{item.isModded === '1'}}">模组</view>
+        </view>
+
+        <!-- 延迟显示 -->
+        <view class="ping-badge">
+          <text>{{item.ping || '-'}}ms</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 底部添加按钮 -->
+  <view class="add-server-fab" bindtap="onAddServer">
+    <view class="fab-icon">+</view>
+    <view class="fab-glow"></view>
+  </view>
+
+  <!-- 添加服务器弹窗 -->
+  <view class="modal-mask" wx:if="{{showAddModal}}" bindtap="closeModal">
+    <view class="modal-content" catchtap="preventClose">
+      <view class="modal-header">
+        <text class="modal-title">添加服务器</text>
+        <view class="modal-close" bindtap="closeModal">×</view>
+      </view>
+      <view class="modal-body">
+        <view class="input-group">
+          <text class="input-label">IP地址</text>
+          <input
+            class="rust-input"
+            placeholder="请输入服务器IP"
+            value="{{newServerIp}}"
+            bindinput="onIpInput"
           />
         </view>
-      </t-tab-panel>
-    </t-tabs>
+        <view class="input-group">
+          <text class="input-label">端口</text>
+          <input
+            class="rust-input"
+            placeholder="默认28015"
+            value="{{newServerPort}}"
+            bindinput="onPortInput"
+            type="number"
+          />
+        </view>
+      </view>
+      <view class="modal-footer">
+        <view class="btn-cancel" bindtap="closeModal">取消</view>
+        <view class="btn-confirm" bindtap="confirmAddServer">查询并添加</view>
+      </view>
+    </view>
   </view>
 </view>
-
-<view class="home-release">
-  <t-button theme="primary" size="large" icon="add" shape="round" bindtap="goRelease">
-    发布
-  </t-button>
-</view>
-<t-message id="t-message" />
