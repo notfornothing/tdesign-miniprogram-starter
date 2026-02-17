@@ -1,6 +1,5 @@
 package com.rustserver.service;
 
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.rustserver.a2s.model.A2SInfo;
 import com.rustserver.a2s.model.A2SPlayer;
 import com.rustserver.common.PageResult;
@@ -19,22 +18,22 @@ public interface ServerService {
     /**
      * Get server detail by ID
      */
-    ServerDetailDTO getServerDetail(Long id);
+    ServerDetailDTO getServerDetail(String id);
 
     /**
      * Query server using A2S protocol
      */
-    A2SInfo queryServer(String ip, Integer port);
+    A2SInfo queryServer(String ip, String port);
 
     /**
      * Get online players of a server
      */
-    List<A2SPlayer> getOnlinePlayers(Long serverId);
+    List<A2SPlayer> getOnlinePlayers(String serverId);
 
     /**
      * Query online players directly using A2S
      */
-    List<A2SPlayer> queryPlayers(String ip, Integer port);
+    List<A2SPlayer> queryPlayers(String ip, String port);
 
     /**
      * Add a new server
@@ -44,12 +43,12 @@ public interface ServerService {
     /**
      * Delete a server
      */
-    void deleteServer(Long id);
+    void deleteServer(String id);
 
     /**
      * Refresh server status
      */
-    void refreshServerStatus(Long serverId);
+    void refreshServerStatus(String serverId);
 
     /**
      * Get filter options

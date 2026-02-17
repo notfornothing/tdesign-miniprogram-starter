@@ -4,8 +4,8 @@ import lombok.Data;
 
 @Data
 public class A2SPlayer {
-    private Integer index;
+    private String index;
     private String name;
-    private Long score;
-    private Float duration;
+    private String score;
+    private String duration;
 }

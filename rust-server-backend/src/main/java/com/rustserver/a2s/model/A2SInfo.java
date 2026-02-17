@@ -5,23 +5,23 @@ import lombok.Data;
 @Data
 public class A2SInfo {
     private String address;
-    private Integer port;
+    private String port;
     private String name;
     private String map;
     private String folder;
     private String game;
-    private Integer appId;
-    private Integer players;
-    private Integer maxPlayers;
-    private Integer bots;
+    private String appId;
+    private String players;
+    private String maxPlayers;
+    private String bots;
     private String serverType;
     private String environment;
-    private Integer visibility;
-    private Integer vac;
+    private String visibility;
+    private String vac;
     private String version;
-    private Integer protocol;
+    private String protocol;
     private String gameDir;
     private String keywords;
-    private Long steamId;
-    private Long ping;
+    private String steamId;
+    private String ping;
 }

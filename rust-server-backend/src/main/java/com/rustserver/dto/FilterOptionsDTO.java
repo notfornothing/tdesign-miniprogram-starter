@@ -8,12 +8,12 @@ import java.util.List;
 public class FilterOptionsDTO {
     private List<String> regions;
     private List<GatherRateOption> gatherRates;
-    private Integer totalServers;
+    private String totalServers;
 
     @Data
     public static class GatherRateOption {
         private String label;
-        private Double min;
-        private Double max;
+        private String min;
+        private String max;
     }
 }
