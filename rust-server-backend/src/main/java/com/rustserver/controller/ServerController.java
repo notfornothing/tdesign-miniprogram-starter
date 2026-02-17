@@ -34,6 +34,7 @@ public class ServerController {
     @GetMapping("/{id}")
     public Result<ServerDetailDTO> getServerDetail(@PathVariable String id) {
         ServerDetailDTO detail = serverService.getServerDetail(id);
+//        System.out.println("test");
         if (detail == null) {
             return Result.error(404, "Server not found");
         }
