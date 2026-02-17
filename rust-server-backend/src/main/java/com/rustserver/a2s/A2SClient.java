@@ -11,7 +11,6 @@ import java.io.IOException;
 import java.net.*;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -136,8 +135,8 @@ public class A2SClient {
 
         A2SInfo info = new A2SInfo();
         info.setAddress(ip);
-        info.setPort(port);
-        info.setPing(ping);
+        info.setPort(String.valueOf(port));
+        info.setPing(String.valueOf(ping));
 
         // Skip header (4 bytes 0xFFFFFFFF + 1 byte type)
         bb.getInt();
@@ -145,15 +144,15 @@ public class A2SClient {
 
         if (type == A2SQuery.A2S_INFO_RESPONSE) {
             // Source format
-            info.setProtocol(bb.get() & 0xFF);
+            info.setProtocol(String.valueOf(bb.get() & 0xFF));
             info.setName(readString(bb));
             info.setMap(readString(bb));
             info.setFolder(readString(bb));
             info.setGame(readString(bb));
-            info.setAppId(bb.getShort() & 0xFFFF);
-            info.setPlayers(bb.get() & 0xFF);
-            info.setMaxPlayers(bb.get() & 0xFF);
-            info.setBots(bb.get() & 0xFF);
+            info.setAppId(String.valueOf(bb.getShort() & 0xFFFF));
+            info.setPlayers(String.valueOf(bb.get() & 0xFF));
+            info.setMaxPlayers(String.valueOf(bb.get() & 0xFF));
+            info.setBots(String.valueOf(bb.get() & 0xFF));
 
             byte serverType = bb.get();
             info.setServerType(serverType == 'd' ? "dedicated" : "listen");
@@ -161,21 +160,22 @@ public class A2SClient {
             byte environment = bb.get();
             info.setEnvironment(environment == 'l' ? "linux" : "windows");
 
-            info.setVisibility(bb.get() & 0xFF);
-            info.setVac(bb.get() & 0xFF);
+            info.setVisibility(String.valueOf(bb.get() & 0xFF));
+            info.setVac(String.valueOf(bb.get() & 0xFF));
             info.setVersion(readString(bb));
 
             // Check for extra data (EDF)
             if (bb.hasRemaining()) {
                 byte edf = bb.get();
                 if ((edf & 0x80) != 0 && bb.remaining() >= 8) {
-                    info.setSteamId(bb.getLong());
+                    info.setSteamId(String.valueOf(bb.getLong()));
                 }
                 if ((edf & 0x10) != 0) {
                     info.setGameDir(readString(bb));
                 }
                 if ((edf & 0x40) != 0 && bb.remaining() >= 4) {
-                    info.setAppId(bb.getInt());
+                    // Skip extended app ID
+                    bb.getInt();
                 }
                 if ((edf & 0x01) != 0) {
                     info.setKeywords(readString(bb));
@@ -207,10 +207,10 @@ public class A2SClient {
 
         for (int i = 0; i < playerCount && bb.hasRemaining(); i++) {
             A2SPlayer player = new A2SPlayer();
-            player.setIndex(bb.get() & 0xFF);
+            player.setIndex(String.valueOf(bb.get() & 0xFF));
             player.setName(readString(bb));
-            player.setScore(bb.getInt() & 0xFFFFFFFFL);
-            player.setDuration(bb.getFloat());
+            player.setScore(String.valueOf(bb.getInt() & 0xFFFFFFFFL));
+            player.setDuration(String.valueOf(bb.getFloat()));
             players.add(player);
         }
 

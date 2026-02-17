@@ -16,7 +16,7 @@ public class MapController {
      * Get map data for a server
      */
     @GetMapping("/servers/{id}/map")
-    public Result<Object> getServerMap(@PathVariable Long id) {
+    public Result<Object> getServerMap(@PathVariable String id) {
         Object mapData = mapService.getMapData(id);
         if (mapData == null) {
             return Result.error(404, "Server not found");

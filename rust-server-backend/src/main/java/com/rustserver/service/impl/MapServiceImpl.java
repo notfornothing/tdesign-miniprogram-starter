@@ -18,7 +18,7 @@ public class MapServiceImpl implements MapService {
     private final ServerMapper serverMapper;
 
     @Override
-    public String getMapUrl(Long serverId) {
+    public String getMapUrl(String serverId) {
         ServerInfo server = serverMapper.selectById(serverId);
         if (server == null) {
             return null;
@@ -26,11 +26,11 @@ public class MapServiceImpl implements MapService {
 
         // Rust maps are typically served at a specific URL pattern
         // This would depend on the server's configuration
-        return String.format("https://playrust.io/map/%s:%d", server.getIp(), server.getPort());
+        return String.format("https://playrust.io/map/%s:%s", server.getIp(), server.getPort());
     }
 
     @Override
-    public Object getMapData(Long serverId) {
+    public Object getMapData(String serverId) {
         ServerInfo server = serverMapper.selectById(serverId);
         if (server == null) {
             return null;

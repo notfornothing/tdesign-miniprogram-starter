@@ -32,7 +32,7 @@ public class ServerController {
      * Get server detail by ID
      */
     @GetMapping("/{id}")
-    public Result<ServerDetailDTO> getServerDetail(@PathVariable Long id) {
+    public Result<ServerDetailDTO> getServerDetail(@PathVariable String id) {
         ServerDetailDTO detail = serverService.getServerDetail(id);
         if (detail == null) {
             return Result.error(404, "Server not found");
@@ -44,7 +44,7 @@ public class ServerController {
      * Get online players of a server
      */
     @GetMapping("/{id}/players")
-    public Result<List<A2SPlayer>> getServerPlayers(@PathVariable Long id) {
+    public Result<List<A2SPlayer>> getServerPlayers(@PathVariable String id) {
         return Result.success(serverService.getOnlinePlayers(id));
     }
 
@@ -52,7 +52,7 @@ public class ServerController {
      * Get server statistics
      */
     @GetMapping("/{id}/stats")
-    public Result<ServerDetailDTO> getServerStats(@PathVariable Long id) {
+    public Result<ServerDetailDTO> getServerStats(@PathVariable String id) {
         ServerDetailDTO detail = serverService.getServerDetail(id);
         if (detail == null) {
             return Result.error(404, "Server not found");
@@ -77,7 +77,7 @@ public class ServerController {
      * Delete a server
      */
     @DeleteMapping("/{id}")
-    public Result<Void> deleteServer(@PathVariable Long id) {
+    public Result<Void> deleteServer(@PathVariable String id) {
         serverService.deleteServer(id);
         return Result.success();
     }
@@ -112,7 +112,7 @@ public class ServerController {
      * Refresh server status
      */
     @PostMapping("/{id}/refresh")
-    public Result<Void> refreshServer(@PathVariable Long id) {
+    public Result<Void> refreshServer(@PathVariable String id) {
         serverService.refreshServerStatus(id);
         return Result.success();
     }

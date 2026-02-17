@@ -91,11 +91,12 @@ public class PlayerServiceImpl implements PlayerService {
 
         if (player == null) {
             player = new PlayerInfo();
+            player.setId(String.valueOf(System.currentTimeMillis()));
             player.setSteamId(steamId);
             player.setName(name);
             player.setFirstSeen(now);
             player.setLastSeen(now);
-            player.setTotalPlaytime(0L);
+            player.setTotalPlaytime("0");
             playerMapper.insert(player);
         } else {
             player.setName(name);

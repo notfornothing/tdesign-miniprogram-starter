@@ -1,6 +1,5 @@
 package com.rustserver.service.impl;
 
-import com.alibaba.fastjson2.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.rustserver.a2s.A2SClient;
@@ -25,11 +24,12 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.io.IOException;
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -44,7 +44,10 @@ public class ServerServiceImpl implements ServerService {
 
     @Override
     public PageResult<ServerListDTO> getServerList(ServerFilterDTO filter) {
-        Page<ServerInfo> page = new Page<>(filter.getPageNum(), filter.getPageSize());
+        int pageNum = parseInt(filter.getPageNum(), 1);
+        int pageSize = parseInt(filter.getPageSize(), 20);
+
+        Page<ServerInfo> page = new Page<>(pageNum, pageSize);
 
         LambdaQueryWrapper<ServerInfo> wrapper = new LambdaQueryWrapper<>();
 
@@ -60,12 +63,12 @@ public class ServerServiceImpl implements ServerService {
         }
 
         // Official filter
-        if (filter.getIsOfficial() != null) {
+        if (StringUtils.hasText(filter.getIsOfficial())) {
             wrapper.eq(ServerInfo::getIsOfficial, filter.getIsOfficial());
         }
 
         // Modded filter
-        if (filter.getIsModded() != null) {
+        if (StringUtils.hasText(filter.getIsModded())) {
             wrapper.eq(ServerInfo::getIsModded, filter.getIsModded());
         }
 
@@ -74,12 +77,11 @@ public class ServerServiceImpl implements ServerService {
         boolean isAsc = "asc".equalsIgnoreCase(filter.getSortOrder());
 
         switch (sortField) {
-            case "players":
-                // Would need a join for real player count sorting
-                wrapper.orderBy(true, isAsc, ServerInfo::getId);
-                break;
             case "name":
                 wrapper.orderBy(true, isAsc, ServerInfo::getName);
+                break;
+            case "createdAt":
+                wrapper.orderBy(true, isAsc, ServerInfo::getCreatedAt);
                 break;
             default:
                 wrapper.orderBy(true, isAsc, ServerInfo::getId);
@@ -91,12 +93,12 @@ public class ServerServiceImpl implements ServerService {
                 .map(this::convertToListDTO)
                 .collect(Collectors.toList());
 
-        return PageResult.of(dtoList, result.getTotal(), (int) result.getCurrent(), (int) result.getSize());
+        return PageResult.of(dtoList, result.getTotal(), pageNum, pageSize);
     }
 
     @Override
     @Cacheable(value = "serverDetail", key = "#id")
-    public ServerDetailDTO getServerDetail(Long id) {
+    public ServerDetailDTO getServerDetail(String id) {
         ServerInfo server = serverMapper.selectById(id);
         if (server == null) {
             return null;
@@ -134,9 +136,10 @@ public class ServerServiceImpl implements ServerService {
     }
 
     @Override
-    public A2SInfo queryServer(String ip, Integer port) {
+    public A2SInfo queryServer(String ip, String port) {
         try {
-            return a2SClient.queryInfo(ip, port);
+            int portInt = parseInt(port, 28015);
+            return a2SClient.queryInfo(ip, portInt);
         } catch (IOException e) {
             log.error("Failed to query server {}:{}", ip, port, e);
             throw new RuntimeException(ErrorCode.QUERY_FAILED.getMessage(), e);
@@ -144,7 +147,7 @@ public class ServerServiceImpl implements ServerService {
     }
 
     @Override
-    public List<A2SPlayer> getOnlinePlayers(Long serverId) {
+    public List<A2SPlayer> getOnlinePlayers(String serverId) {
         ServerInfo server = serverMapper.selectById(serverId);
         if (server == null) {
             return new ArrayList<>();
@@ -153,9 +156,10 @@ public class ServerServiceImpl implements ServerService {
     }
 
     @Override
-    public List<A2SPlayer> queryPlayers(String ip, Integer port) {
+    public List<A2SPlayer> queryPlayers(String ip, String port) {
         try {
-            return a2SClient.queryPlayers(ip, port);
+            int portInt = parseInt(port, 28015);
+            return a2SClient.queryPlayers(ip, portInt);
         } catch (IOException e) {
             log.error("Failed to query players for {}:{}", ip, port, e);
             return new ArrayList<>();
@@ -179,15 +183,16 @@ public class ServerServiceImpl implements ServerService {
         A2SInfo a2SInfo = queryServer(dto.getIp(), dto.getPort());
 
         ServerInfo server = new ServerInfo();
+        server.setId(generateId());
         server.setName(a2SInfo.getName());
         server.setIp(dto.getIp());
         server.setPort(dto.getPort());
         server.setMapName(a2SInfo.getMap());
         server.setMaxPlayers(a2SInfo.getMaxPlayers());
         server.setStatus("online");
-        server.setIsOfficial(0);
-        server.setIsModded(0);
-        server.setGatherRate(BigDecimal.ONE);
+        server.setIsOfficial("0");
+        server.setIsModded("0");
+        server.setGatherRate("1");
 
         // Parse keywords for extra info
         if (StringUtils.hasText(a2SInfo.getKeywords())) {
@@ -206,20 +211,21 @@ public class ServerServiceImpl implements ServerService {
     @Override
     @Transactional
     @CacheEvict(value = {"serverList", "serverDetail"}, allEntries = true)
-    public void deleteServer(Long id) {
+    public void deleteServer(String id) {
         serverMapper.deleteById(id);
     }
 
     @Override
     @Transactional
-    public void refreshServerStatus(Long serverId) {
+    public void refreshServerStatus(String serverId) {
         ServerInfo server = serverMapper.selectById(serverId);
         if (server == null) {
             return;
         }
 
         try {
-            A2SInfo info = a2SClient.queryInfo(server.getIp(), server.getPort());
+            int portInt = parseInt(server.getPort(), 28015);
+            A2SInfo info = a2SClient.queryInfo(server.getIp(), portInt);
             server.setName(info.getName());
             server.setMapName(info.getMap());
             server.setMaxPlayers(info.getMaxPlayers());
@@ -243,35 +249,36 @@ public class ServerServiceImpl implements ServerService {
         List<FilterOptionsDTO.GatherRateOption> gatherRates = new ArrayList<>();
         FilterOptionsDTO.GatherRateOption low = new FilterOptionsDTO.GatherRateOption();
         low.setLabel("1x-2x");
-        low.setMin(1.0);
-        low.setMax(2.0);
+        low.setMin("1");
+        low.setMax("2");
         gatherRates.add(low);
 
         FilterOptionsDTO.GatherRateOption medium = new FilterOptionsDTO.GatherRateOption();
         medium.setLabel("2x-5x");
-        medium.setMin(2.0);
-        medium.setMax(5.0);
+        medium.setMin("2");
+        medium.setMax("5");
         gatherRates.add(medium);
 
         FilterOptionsDTO.GatherRateOption high = new FilterOptionsDTO.GatherRateOption();
         high.setLabel("5x+");
-        high.setMin(5.0);
+        high.setMin("5");
         high.setMax(null);
         gatherRates.add(high);
 
         dto.setGatherRates(gatherRates);
-        dto.setTotalServers(Math.toIntExact(serverMapper.selectCount(null)));
+        dto.setTotalServers(String.valueOf(serverMapper.selectCount(null)));
 
         return dto;
     }
 
-    private void recordServerStatus(Long serverId, A2SInfo info) {
+    private void recordServerStatus(String serverId, A2SInfo info) {
         ServerStatus status = new ServerStatus();
+        status.setId(generateId());
         status.setServerId(serverId);
         status.setPlayers(info.getPlayers());
         status.setMaxPlayers(info.getMaxPlayers());
-        status.setQueuePlayers(0);
-        status.setPing(info.getPing().intValue());
+        status.setQueuePlayers("0");
+        status.setPing(info.getPing());
         status.setRecordedAt(LocalDateTime.now());
         serverStatusMapper.insert(status);
     }
@@ -281,16 +288,12 @@ public class ServerServiceImpl implements ServerService {
         for (String part : parts) {
             part = part.trim();
             if (part.startsWith("gather_")) {
-                try {
-                    String rateStr = part.replace("gather_", "");
-                    BigDecimal rate = new BigDecimal(rateStr);
-                    server.setGatherRate(rate);
-                } catch (NumberFormatException ignored) {
-                }
+                String rateStr = part.replace("gather_", "");
+                server.setGatherRate(rateStr);
             } else if (part.equals("official")) {
-                server.setIsOfficial(1);
+                server.setIsOfficial("1");
             } else if (part.equals("modded")) {
-                server.setIsModded(1);
+                server.setIsModded("1");
             } else if (part.startsWith("region_")) {
                 server.setRegion(part.replace("region_", ""));
             }
@@ -345,5 +348,20 @@ public class ServerServiceImpl implements ServerService {
         }
 
         return dto;
+    }
+
+    private String generateId() {
+        return String.valueOf(System.currentTimeMillis());
+    }
+
+    private int parseInt(String value, int defaultValue) {
+        if (value == null || value.isEmpty()) {
+            return defaultValue;
+        }
+        try {
+            return Integer.parseInt(value);
+        } catch (NumberFormatException e) {
+            return defaultValue;
+        }
     }
 }
